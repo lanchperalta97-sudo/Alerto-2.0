@@ -1,0 +1,170 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ALERTO | PNP Admin Dashboard</title>
+
+    <link rel="stylesheet" href="admin.css">
+
+    <!-- Leaflet map styles -->
+    <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    >
+</head>
+<body>
+
+    <!-- LOGIN SCREEN -->
+    <section id="loginScreen" class="login-screen">
+        <div class="login-card">
+            <div class="brand-icon">A</div>
+            <h1>ALERTO</h1>
+            <p class="login-subtitle">PNP Administrator Portal</p>
+
+            <form id="loginForm">
+                <label for="adminEmail">Email Address</label>
+                <input
+                    type="email"
+                    id="adminEmail"
+                    placeholder="Administrator email"
+                    required
+                >
+
+                <label for="adminPassword">Password</label>
+                <input
+                    type="password"
+                    id="adminPassword"
+                    placeholder="Enter password"
+                    required
+                >
+
+                <button type="submit" id="loginButton">
+                    Sign In
+                </button>
+
+                <p id="loginMessage" class="message"></p>
+            </form>
+        </div>
+    </section>
+
+
+    <!-- DASHBOARD -->
+    <div id="dashboard" class="dashboard hidden">
+
+        <header class="topbar">
+            <div class="brand">
+                <div class="brand-icon small">A</div>
+                <div>
+                    <h2>ALERTO</h2>
+                    <p>PNP Emergency Monitoring</p>
+                </div>
+            </div>
+
+            <div class="admin-info">
+                <span id="adminEmailDisplay">Administrator</span>
+                <button id="logoutButton" class="logout-button">
+                    Logout
+                </button>
+            </div>
+        </header>
+
+
+        <main class="main-content">
+
+            <div class="page-heading">
+                <div>
+                    <h1>Emergency Dashboard</h1>
+                    <p>Monitor incoming emergency reports and their locations.</p>
+                </div>
+
+                <span class="live-indicator">
+                    <span class="live-dot"></span>
+                    LIVE MONITORING
+                </span>
+            </div>
+
+
+            <!-- SUMMARY CARDS -->
+            <section class="summary-grid">
+
+                <div class="summary-card">
+                    <span>Total Reports</span>
+                    <strong id="totalReports">0</strong>
+                </div>
+
+                <div class="summary-card">
+                    <span>Received</span>
+                    <strong id="receivedReports">0</strong>
+                </div>
+
+                <div class="summary-card">
+                    <span>Under Review</span>
+                    <strong id="reviewReports">0</strong>
+                </div>
+
+                <div class="summary-card">
+                    <span>Dispatched</span>
+                    <strong id="dispatchedReports">0</strong>
+                </div>
+
+            </section>
+
+
+            <!-- MAP AND REPORT LIST -->
+            <section class="workspace">
+
+                <div class="map-section">
+                    <div class="section-heading">
+                        <div>
+                            <h2>Incident Map</h2>
+                            <p>Reported GPS locations</p>
+                        </div>
+                    </div>
+
+                    <div id="map"></div>
+
+                    <p class="map-note">
+                        Map pins represent submitted report coordinates.
+                        Verify locations before taking action.
+                    </p>
+                </div>
+
+
+                <aside class="reports-section">
+
+                    <div class="section-heading">
+                        <div>
+                            <h2>Incoming Reports</h2>
+                            <p id="reportCount">0 reports</p>
+                        </div>
+                    </div>
+
+                    <div id="reportsList" class="reports-list">
+                        <p class="empty-message">
+                            Waiting for emergency reports...
+                        </p>
+                    </div>
+
+                </aside>
+
+            </section>
+
+        </main>
+
+        <footer>
+            ALERTO PNP Monitoring System · Administrative Use
+        </footer>
+
+    </div>
+
+
+    <!-- Leaflet map script -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- Firebase dashboard logic -->
+    <script type="module" src="admin.js"></script>
+
+</body>
+</html>

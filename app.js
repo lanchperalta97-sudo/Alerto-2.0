@@ -1,14 +1,41 @@
 
-// ALERTO APP SETTINGS
+import { db } from "./firebase-config.js";
 
-// Add only an officially authorized PNP SMS receiving number.
-// Example format: +639XXXXXXXXX
+import {
+    collection,
+    addDoc,
+    serverTimestamp
+} from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+
+import {
+    getAuth,
+    signInAnonymously
+} from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
+
+// ALERTO SETTINGS
+// Only configure an SMS number after official PNP authorization.
 const PNP_SMS_NUMBER = "";
+
+const REPORTS_COLLECTION = "emergencyReports";
 
 let currentLatitude = null;
 let currentLongitude = null;
+let authReady = false;
 
-// HTML elements
+// FIREBASE AUTHENTICATION
+const auth = getAuth();
+
+const authPromise = signInAnonymously(auth)
+    .then(() => {
+        authReady = true;
+        console.log("ALERTO Firebase authentication successful.");
+    })
+    .catch(error => {
+        console.error("Firebase authentication failed:", error);
+        authReady = false;
+    });
+
+// HTML ELEMENTS
 const internetElement = document.getElementById("internet");
 const gpsElement = document.getElementById("gps");
 const smsElement = document.getElementById("sms");
@@ -21,7 +48,6 @@ const historyPanel = document.getElementById("historyPanel");
 const helpPanel = document.getElementById("helpPanel");
 
 // INTERNET STATUS
-
 function checkInternet() {
     if (navigator.onLine) {
         internetElement.textContent = "Connected";
@@ -39,12 +65,12 @@ window.addEventListener("offline", checkInternet);
 
 checkInternet();
 
+window.addEventListener("online", syncPendingReports);
+
 // SMS STATUS
-// A browser cannot reliably detect SIM service or SMS signal.
 smsElement.textContent = "Check phone and SIM";
 
 // GPS FUNCTION
-
 function getGPS() {
     if (!navigator.geolocation) {
         gpsElement.textContent = "Not supported";
@@ -90,8 +116,7 @@ document.getElementById("refreshGPS")
 
 getGPS();
 
-// SAVE REPORT LOCALLY
-
+// LOCAL REPORT STORAGE
 function getReports() {
     try {
         return JSON.parse(
@@ -104,7 +129,16 @@ function getReports() {
 
 function saveReport(report) {
     const reports = getReports();
-    reports.unshift(report);
+
+    const index = reports.findIndex(
+        item => item.id === report.id
+    );
+
+    if (index === -1) {
+        reports.unshift(report);
+    } else {
+        reports[index] = report;
+    }
 
     localStorage.setItem(
         "alertoReports",
@@ -112,8 +146,63 @@ function saveReport(report) {
     );
 }
 
-// OPEN EMERGENCY FORM
+// FIREBASE SUBMISSION
+async function submitToFirebase(report) {
+    if (!navigator.onLine) {
+        return false;
+    }
 
+    await authPromise;
+
+    if (!authReady) {
+        throw new Error("Firebase authentication is not ready.");
+    }
+
+    const docRef = await addDoc(
+        collection(db, REPORTS_COLLECTION),
+        {
+            incidentId: report.id,
+            incidentType: report.incidentType,
+            description: report.description,
+            latitude: report.latitude,
+            longitude: report.longitude,
+            createdAt: serverTimestamp(),
+            communicationMethod: "Internet",
+            status: "Received by ALERTO server"
+        }
+    );
+
+    report.firebaseDocId = docRef.id;
+    report.status = "Received by ALERTO server";
+    report.syncStatus = "Synced";
+
+    saveReport(report);
+
+    return true;
+}
+
+// SYNC REPORTS THAT WERE SAVED WHILE OFFLINE
+async function syncPendingReports() {
+    if (!navigator.onLine) return;
+
+    const reports = getReports();
+
+    for (const report of reports) {
+        if (report.syncStatus !== "Pending") continue;
+
+        try {
+            await submitToFirebase(report);
+            console.log("Synced report:", report.id);
+        } catch (error) {
+            console.error("Could not sync report:", report.id, error);
+            break;
+        }
+    }
+
+    showHistory();
+}
+
+// OPEN EMERGENCY FORM
 document.getElementById("sosButton")
     .addEventListener("click", function() {
         reportPanel.classList.remove("hidden");
@@ -130,20 +219,16 @@ document.getElementById("sosButton")
     });
 
 // GENERATE INCIDENT ID
-
 function generateIncidentID() {
-    return "ALT-" +
-        Date.now().toString().slice(-10);
+    return "ALT-" + Date.now().toString().slice(-10);
 }
 
-// PREPARE EMERGENCY SMS
-
+// SUBMIT EMERGENCY REPORT
 document.getElementById("sendReport")
-    .addEventListener("click", function() {
+    .addEventListener("click", async function() {
 
         if (currentLatitude === null ||
             currentLongitude === null) {
-
             alert("GPS location is unavailable. Please obtain your location first.");
             return;
         }
@@ -152,7 +237,15 @@ document.getElementById("sendReport")
             document.getElementById("incidentType").value;
 
         const description =
-            document.getElementById("description").value;
+            document.getElementById("description").value.trim();
+
+        if (!description) {
+            alert("Please enter a description of the incident.");
+            return;
+        }
+
+        const sendButton = document.getElementById("sendReport");
+        sendButton.disabled = true;
 
         const incidentID = generateIncidentID();
 
@@ -163,72 +256,52 @@ document.getElementById("sendReport")
             latitude: currentLatitude,
             longitude: currentLongitude,
             createdAt: new Date().toISOString(),
-            communicationMethod: "SMS",
-            status: "Saved locally"
+            communicationMethod: navigator.onLine ? "Internet" : "Offline",
+            status: navigator.onLine ? "Submitting..." : "Saved offline",
+            syncStatus: navigator.onLine ? "Pending" : "Pending"
         };
 
-        // Save the report before attempting transmission.
+        // Save locally first.
         saveReport(report);
 
-        const message =
-            "ALERTO EMERGENCY REPORT\n" +
-            "ID: " + incidentID + "\n" +
-            "TYPE: " + incidentType + "\n" +
-            "LAT: " + currentLatitude.toFixed(6) + "\n" +
-            "LON: " + currentLongitude.toFixed(6) + "\n" +
-            "TIME: " + report.createdAt + "\n" +
-            "DETAILS: " + description;
+        if (navigator.onLine) {
+            try {
+                await submitToFirebase(report);
 
-        if (!PNP_SMS_NUMBER) {
+                alert(
+                    "Your report was uploaded to ALERTO.\n\n" +
+                    "Incident ID: " + incidentID +
+                    "\nThe PNP dashboard can retrieve this report."
+                );
+            } catch (error) {
+                console.error("Firebase submission error:", error);
+
+                report.status = "Saved locally - upload failed";
+                report.syncStatus = "Pending";
+                saveReport(report);
+
+                alert(
+                    "Your report is saved on this device, " +
+                    "but could not be uploaded to Firebase.\n\n" +
+                    "It will be retried when the connection is available.\n\n" +
+                    "Incident ID: " + incidentID
+                );
+            }
+        } else {
             alert(
-                "Report saved on this device.\n\n" +
-                "No authorized PNP SMS number is configured. " +
-                "The report has NOT been transmitted."
-            );
-
-            showHistory();
-            return;
-        }
-
-        const confirmed = confirm(
-            "Prepare this emergency report for SMS?\n\n" +
-            "Incident ID: " + incidentID
-        );
-
-        if (!confirmed) return;
-
-        const smsLink =
-            "sms:" + PNP_SMS_NUMBER +
-            "?body=" + encodeURIComponent(message);
-
-        window.location.href = smsLink;
-
-        alert(
-            "The SMS application should open. " +
-            "Review the message and press Send. " +
-            "ALERTO cannot confirm delivery from this browser."
-        );
-
-        report.status = "SMS prepared; delivery unconfirmed";
-
-        const reports = getReports();
-        const index = reports.findIndex(
-            item => item.id === incidentID
-        );
-
-        if (index !== -1) {
-            reports[index] = report;
-            localStorage.setItem(
-                "alertoReports",
-                JSON.stringify(reports)
+                "You are offline.\n\n" +
+                "Your report is saved on this device and will be " +
+                "queued for upload when internet returns.\n\n" +
+                "Incident ID: " + incidentID +
+                "\n\nIt has NOT yet reached the PNP dashboard."
             );
         }
 
+        sendButton.disabled = false;
         showHistory();
     });
 
 // DISPLAY HISTORY
-
 function escapeHTML(value) {
     return String(value).replace(/[&<>"']/g, function(char) {
         return {
@@ -274,7 +347,6 @@ document.getElementById("closeHistory")
     });
 
 // HELP
-
 document.getElementById("helpButton")
     .addEventListener("click", function() {
         helpPanel.classList.remove("hidden");
@@ -288,14 +360,12 @@ document.getElementById("closeHelp")
     });
 
 // CANCEL REPORT
-
 document.getElementById("cancelReport")
     .addEventListener("click", function() {
         reportPanel.classList.add("hidden");
     });
 
 // OFFLINE APP SUPPORT
-
 if ("serviceWorker" in navigator) {
     window.addEventListener("load", function() {
         navigator.serviceWorker.register("./sw.js")

@@ -1,0 +1,435 @@
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    background: #f4f7fb;
+    color: #243247;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* LOGIN */
+
+.login-screen {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    background: #eef3f9;
+}
+
+.login-card {
+    width: 100%;
+    max-width: 400px;
+    padding: 38px;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 8px 30px rgba(20, 40, 70, 0.09);
+}
+
+.brand-icon {
+    width: 55px;
+    height: 55px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #173b68;
+    color: white;
+    font-size: 27px;
+    font-weight: bold;
+    border-radius: 12px;
+    margin: 0 auto 15px;
+}
+
+.login-card h1 {
+    text-align: center;
+    color: #173b68;
+    letter-spacing: 2px;
+}
+
+.login-subtitle {
+    text-align: center;
+    color: #7b8797;
+    margin: 8px 0 30px;
+}
+
+.login-card label {
+    display: block;
+    margin: 15px 0 7px;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.login-card input {
+    width: 100%;
+    padding: 13px;
+    border: 1px solid #dce3ec;
+    border-radius: 8px;
+    outline: none;
+}
+
+.login-card input:focus {
+    border-color: #2864a5;
+}
+
+.login-card button {
+    width: 100%;
+    padding: 13px;
+    margin-top: 22px;
+    border: none;
+    border-radius: 8px;
+    background: #173b68;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.login-card button:hover {
+    background: #24558d;
+}
+
+.login-card button:disabled {
+    opacity: 0.6;
+    cursor: wait;
+}
+
+.message {
+    margin-top: 15px;
+    font-size: 13px;
+    color: #c0392b;
+    text-align: center;
+}
+
+
+/* TOP BAR */
+
+.topbar {
+    height: 76px;
+    background: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 5%;
+    border-bottom: 1px solid #e5eaf0;
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.brand-icon.small {
+    width: 43px;
+    height: 43px;
+    margin: 0;
+    font-size: 22px;
+}
+
+.brand h2 {
+    color: #173b68;
+    font-size: 20px;
+}
+
+.brand p {
+    color: #8994a3;
+    font-size: 12px;
+    margin-top: 3px;
+}
+
+.admin-info {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    font-size: 13px;
+}
+
+.logout-button {
+    padding: 9px 16px;
+    border: 1px solid #d9e1eb;
+    background: white;
+    border-radius: 7px;
+    color: #34465d;
+    cursor: pointer;
+}
+
+.logout-button:hover {
+    background: #f1f4f8;
+}
+
+
+/* MAIN CONTENT */
+
+.main-content {
+    max-width: 1600px;
+    margin: auto;
+    padding: 30px 5%;
+}
+
+.page-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+.page-heading h1 {
+    font-size: 26px;
+    color: #203b5c;
+}
+
+.page-heading p {
+    color: #8490a0;
+    margin-top: 7px;
+    font-size: 14px;
+}
+
+.live-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: bold;
+    color: #23845c;
+    background: #e8f7ef;
+    padding: 9px 12px;
+    border-radius: 20px;
+}
+
+.live-dot {
+    width: 8px;
+    height: 8px;
+    background: #2aaa70;
+    border-radius: 50%;
+}
+
+
+/* SUMMARY CARDS */
+
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 17px;
+    margin-bottom: 25px;
+}
+
+.summary-card {
+    background: white;
+    border: 1px solid #e7ecf2;
+    border-radius: 12px;
+    padding: 20px;
+}
+
+.summary-card span {
+    display: block;
+    color: #8792a1;
+    font-size: 13px;
+    margin-bottom: 12px;
+}
+
+.summary-card strong {
+    font-size: 29px;
+    color: #173b68;
+}
+
+
+/* MAP AND REPORTS */
+
+.workspace {
+    display: grid;
+    grid-template-columns: minmax(0, 1.7fr) minmax(300px, 0.9fr);
+    gap: 20px;
+    align-items: start;
+}
+
+.map-section,
+.reports-section {
+    background: white;
+    border: 1px solid #e7ecf2;
+    border-radius: 12px;
+    padding: 20px;
+    min-width: 0;
+}
+
+.section-heading {
+    margin-bottom: 17px;
+}
+
+.section-heading h2 {
+    color: #253d5b;
+    font-size: 18px;
+}
+
+.section-heading p {
+    color: #929dac;
+    font-size: 12px;
+    margin-top: 5px;
+}
+
+#map {
+    width: 100%;
+    height: 570px;
+    border-radius: 9px;
+    background: #e9eef4;
+    z-index: 1;
+}
+
+.map-note {
+    font-size: 11px;
+    color: #8793a1;
+    margin-top: 12px;
+    line-height: 1.5;
+}
+
+
+/* REPORT LIST */
+
+.reports-list {
+    max-height: 630px;
+    overflow-y: auto;
+}
+
+.empty-message {
+    color: #929dac;
+    font-size: 13px;
+    text-align: center;
+    padding: 35px 10px;
+}
+
+.report-card {
+    padding: 15px 0;
+    border-bottom: 1px solid #edf0f4;
+}
+
+.report-card:first-child {
+    padding-top: 0;
+}
+
+.report-card h3 {
+    font-size: 14px;
+    color: #203b5c;
+    margin-bottom: 8px;
+}
+
+.report-card p {
+    font-size: 12px;
+    color: #7d8999;
+    margin: 5px 0;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+
+.report-card .incident-id {
+    color: #2864a5;
+    font-weight: bold;
+}
+
+.report-status {
+    display: inline-block;
+    padding: 5px 8px;
+    border-radius: 5px;
+    font-size: 10px;
+    font-weight: bold;
+    background: #edf2f8;
+    color: #48617e;
+    margin: 7px 0;
+}
+
+.status-select {
+    width: 100%;
+    padding: 9px;
+    margin-top: 9px;
+    border: 1px solid #dce3ec;
+    border-radius: 7px;
+    background: white;
+    color: #34465d;
+}
+
+.status-select:disabled {
+    opacity: 0.6;
+}
+
+footer {
+    padding: 22px;
+    text-align: center;
+    font-size: 11px;
+    color: #98a2b0;
+}
+
+
+/* RESPONSIVE */
+
+@media (max-width: 950px) {
+    .workspace {
+        grid-template-columns: 1fr;
+    }
+
+    #map {
+        height: 450px;
+    }
+
+    .reports-list {
+        max-height: 450px;
+    }
+}
+
+@media (max-width: 650px) {
+    .topbar {
+        padding: 0 4%;
+    }
+
+    .admin-info {
+        gap: 8px;
+        font-size: 11px;
+    }
+
+    .admin-info span {
+        max-width: 115px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .main-content {
+        padding: 22px 4%;
+    }
+
+    .page-heading {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .page-heading h1 {
+        font-size: 22px;
+    }
+
+    .summary-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+
+    .summary-card {
+        padding: 15px;
+    }
+
+    .summary-card strong {
+        font-size: 24px;
+    }
+
+    #map {
+        height: 380px;
+    }
+
+    .map-section,
+    .reports-section {
+        padding: 14px;
+    }
+}
