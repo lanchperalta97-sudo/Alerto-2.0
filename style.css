@@ -64,11 +64,15 @@ main {
     font-size: 13px;
 }
 
+/* CONNECTION AND CONTENT CARDS */
+
 .status-card,
 .location-card,
 .report-panel,
 .history-panel,
-.help-panel {
+.help-panel,
+.verification-status-card,
+.verification-panel {
     background: #1e293b;
     padding: 20px;
     border-radius: 15px;
@@ -111,6 +115,34 @@ main {
     font-size: 12px;
     color: #4ade80;
 }
+
+/* VERIFICATION STATUS */
+
+.verification-status-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    border: 1px solid #475569;
+}
+
+.verification-status-card strong {
+    font-size: 12px;
+}
+
+.verification-status-card p {
+    margin-top: 8px;
+    color: #facc15;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.verification-status-card button {
+    flex-shrink: 0;
+    font-size: 11px;
+}
+
+/* SOS BUTTON */
 
 .emergency-section {
     text-align: center;
@@ -162,6 +194,8 @@ main {
     margin-top: 18px;
 }
 
+/* LOCATION */
+
 .location-card h3 {
     margin-bottom: 15px;
 }
@@ -173,9 +207,11 @@ main {
     line-height: 1.6;
 }
 
+/* BUTTONS */
+
 .secondary-button,
 .send-button {
-    padding: 20px;
+    padding: 13px;
     border: none;
     border-radius: 9px;
     cursor: pointer;
@@ -187,11 +223,19 @@ main {
     color: white;
 }
 
+.secondary-button:hover {
+    background: #475569;
+}
+
 .send-button {
     background: #dc2626;
     color: white;
     width: 100%;
     margin: 15px 0 10px;
+}
+
+.send-button:hover {
+    background: #b91c1c;
 }
 
 .quick-access {
@@ -204,31 +248,42 @@ main {
     flex: 1;
 }
 
+/* FORMS */
+
 .report-panel h2,
 .history-panel h2,
-.help-panel h2 {
+.help-panel h2,
+.verification-panel h2 {
     margin-bottom: 10px;
 }
 
-.report-panel label {
+.report-panel label,
+.verification-panel label {
     display: block;
     margin: 18px 0 8px;
     font-size: 13px;
 }
 
 .report-panel select,
-.report-panel textarea {
+.report-panel textarea,
+.verification-panel input,
+.verification-panel select {
     width: 100%;
     padding: 12px;
     background: #334155;
     border: 1px solid #475569;
     border-radius: 8px;
     color: white;
+    font-family: Arial, sans-serif;
 }
 
 .report-panel textarea {
     min-height: 90px;
     resize: vertical;
+}
+
+.verification-panel input {
+    min-height: 43px;
 }
 
 .report-location {
@@ -244,6 +299,58 @@ main {
     color: #aab8cb;
 }
 
+/* VERIFICATION REMINDER MODAL */
+
+.verification-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.82);
+}
+
+.verification-modal {
+    width: 100%;
+    max-width: 400px;
+    padding: 28px;
+    text-align: center;
+    background: #1e293b;
+    border: 1px solid #475569;
+    border-radius: 18px;
+    box-shadow: 0 15px 50px #00000066;
+}
+
+.verification-icon {
+    font-size: 45px;
+    margin-bottom: 15px;
+}
+
+.verification-modal h2 {
+    margin-bottom: 12px;
+    font-size: 22px;
+}
+
+.verification-modal p {
+    color: #cbd5e1;
+    font-size: 13px;
+    line-height: 1.6;
+    margin-bottom: 12px;
+}
+
+.verification-modal .secondary-button {
+    width: 100%;
+    margin-top: 5px;
+}
+
+.verification-modal .send-button {
+    margin-top: 10px;
+}
+
+/* INFORMATION */
+
 .note {
     color: #facc15;
     font-size: 11px;
@@ -255,6 +362,12 @@ main {
     display: none !important;
 }
 
+#verificationMessage {
+    margin-top: 12px;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
 #reportHistory {
     color: #cbd5e1;
     font-size: 13px;
@@ -262,12 +375,16 @@ main {
     margin: 15px 0;
 }
 
+/* FOOTER */
+
 footer {
     text-align: center;
     color: #64748b;
     font-size: 11px;
     padding: 25px;
 }
+
+/* MOBILE */
 
 @media (max-width: 400px) {
     main {
@@ -281,5 +398,14 @@ footer {
     .sos-button {
         width: 160px;
         height: 160px;
+    }
+
+    .verification-status-card {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .verification-status-card button {
+        width: 100%;
     }
 }

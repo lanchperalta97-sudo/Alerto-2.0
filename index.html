@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#101827">
     <title>ALERTO | PNP San Miguel</title>
+
     <link rel="stylesheet" href="style.css">
     <link rel="manifest" href="manifest.json">
 </head>
@@ -26,6 +27,18 @@
         <p>Your safety matters. We're here to help.</p>
     </section>
 
+    <!-- USER VERIFICATION STATUS -->
+    <section class="verification-status-card" id="verificationStatusCard">
+        <div>
+            <strong>ACCOUNT VERIFICATION</strong>
+            <p id="verificationStatusText">Checking account status...</p>
+        </div>
+        <button class="secondary-button" id="openVerification">
+            Verify Account
+        </button>
+    </section>
+
+    <!-- CONNECTION STATUS -->
     <section class="status-card">
         <div class="status-heading">
             <strong>CONNECTION STATUS</strong>
@@ -48,33 +61,105 @@
         </div>
     </section>
 
+    <!-- EMERGENCY BUTTON -->
     <section class="emergency-section">
         <p>NEED POLICE ASSISTANCE?</p>
+
         <button class="sos-button" id="sosButton">
             <span>🚨</span>
             <strong>SOS</strong>
             <small>EMERGENCY</small>
         </button>
+
         <small class="hint">Tap to prepare an emergency report.</small>
     </section>
 
+    <!-- GPS LOCATION -->
     <section class="location-card">
         <h3>📍 MY LOCATION</h3>
         <p id="locationText">Getting your GPS location...</p>
+
         <button class="secondary-button" id="refreshGPS">
             Refresh Location
         </button>
     </section>
 
+    <!-- QUICK ACCESS -->
     <section class="quick-access">
         <button class="secondary-button" id="historyButton">
             📋 My Reports
         </button>
+
         <button class="secondary-button" id="helpButton">
             ℹ️ Help
         </button>
+    </section>
 
+    <!-- VERIFICATION REMINDER -->
+    <section class="verification-overlay hidden" id="verificationReminder">
+        <div class="verification-modal">
+            <div class="verification-icon">🛡️</div>
 
+            <h2>Verify Your Account</h2>
+
+            <p>
+                Account verification helps ALERTO administrators
+                review reports and discourage misuse.
+            </p>
+
+            <p id="dismissalMessage">
+                You can continue to emergency reporting without verifying.
+            </p>
+
+            <button class="send-button" id="verifyNowButton">
+                Verify Now
+            </button>
+
+            <button class="secondary-button" id="dismissVerification">
+                Continue to ALERTO
+            </button>
+        </div>
+    </section>
+
+    <!-- VERIFICATION FORM -->
+    <section class="verification-panel hidden" id="verificationPanel">
+        <h2>Account Verification</h2>
+        <p>Enter your information for administrator review.</p>
+
+        <label for="fullName">Full Name</label>
+        <input
+            type="text"
+            id="fullName"
+            placeholder="Enter your full name"
+            autocomplete="name"
+        >
+
+        <label for="barangay">Barangay</label>
+        <select id="barangay">
+            <option value="">Select your barangay</option>
+            <option value="Bagong Silang">Bagong Silang</option>
+            <option value="Biak-na-Bato">Biak-na-Bato</option>
+            <option value="Camias">Camias</option>
+            <option value="Calaanan">Calaanan</option>
+        </select>
+
+        <p class="note">
+            This information will be submitted for review.
+            Do not upload actual government ID images in this prototype.
+        </p>
+
+        <button class="send-button" id="submitVerification">
+            Submit for Verification
+        </button>
+
+        <button class="secondary-button" id="cancelVerification">
+            Back
+        </button>
+
+        <p id="verificationMessage" aria-live="polite"></p>
+    </section>
+
+    <!-- EMERGENCY REPORT -->
     <section class="report-panel hidden" id="reportPanel">
         <h2>Emergency Report</h2>
         <p>Review your emergency information.</p>
@@ -87,9 +172,11 @@
             <option>Other Emergency</option>
         </select>
 
-        <label for="description">Additional Information</label>
-        <textarea id="description"
-            placeholder="Describe what happened..."></textarea>
+        <label for="description">Additional Information (Optional)</label>
+        <textarea
+            id="description"
+            placeholder="Describe what happened (optional)..."
+        ></textarea>
 
         <div class="report-location">
             <strong>GPS Coordinates</strong>
@@ -110,19 +197,24 @@
         </p>
     </section>
 
+    <!-- REPORT HISTORY -->
     <section class="history-panel hidden" id="historyPanel">
         <h2>My Reports</h2>
+
         <div id="reportHistory">No reports yet.</div>
+
         <button class="secondary-button" id="closeHistory">
             Back
         </button>
     </section>
 
+    <!-- HELP -->
     <section class="help-panel hidden" id="helpPanel">
         <h2>Emergency Help</h2>
         <p>ALERTO is a supplementary police reporting application.</p>
         <p>For urgent assistance, use established emergency services as well.</p>
         <p>SMS availability depends on cellular coverage and your mobile service.</p>
+
         <button class="secondary-button" id="closeHelp">
             Back
         </button>
@@ -134,6 +226,8 @@
     <p>Emergency reporting prototype</p>
 </footer>
 
+<!-- Keep Firebase-enabled app.js as a module -->
 <script type="module" src="app.js"></script>
+
 </body>
 </html>
