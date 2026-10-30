@@ -1,0 +1,139 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#101827">
+    <title>ALERTO | PNP San Miguel</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+</head>
+<body>
+
+<header class="header">
+    <div class="logo">🛡️</div>
+    <div>
+        <h2>ALERTO</h2>
+        <small>PNP SAN MIGUEL, BULACAN</small>
+    </div>
+    <span class="app-label">CITIZEN APP</span>
+</header>
+
+<main>
+    <section class="welcome">
+        <h1>Emergency Assistance</h1>
+        <p>Your safety matters. We're here to help.</p>
+    </section>
+
+    <section class="status-card">
+        <div class="status-heading">
+            <strong>CONNECTION STATUS</strong>
+            <span id="mode" class="status offline">OFFLINE MODE</span>
+        </div>
+
+        <div class="status-row">
+            <span>🌐 Internet</span>
+            <strong id="internet">Checking...</strong>
+        </div>
+
+        <div class="status-row">
+            <span>📍 GPS Location</span>
+            <strong id="gps">Not checked</strong>
+        </div>
+
+        <div class="status-row">
+            <span>💬 SMS</span>
+            <strong id="sms">Requires phone check</strong>
+        </div>
+    </section>
+
+    <section class="emergency-section">
+        <p>NEED POLICE ASSISTANCE?</p>
+        <button class="sos-button" id="sosButton">
+            <span>🚨</span>
+            <strong>SOS</strong>
+            <small>EMERGENCY</small>
+        </button>
+        <small class="hint">Tap to prepare an emergency report.</small>
+    </section>
+
+    <section class="location-card">
+        <h3>📍 MY LOCATION</h3>
+        <p id="locationText">Getting your GPS location...</p>
+        <button class="secondary-button" id="refreshGPS">
+            Refresh Location
+        </button>
+    </section>
+
+    <section class="quick-access">
+        <button class="secondary-button" id="historyButton">
+            📋 My Reports
+        </button>
+        <button class="secondary-button" id="helpButton">
+            ℹ️ Help
+        </button>
+
+
+    <section class="report-panel hidden" id="reportPanel">
+        <h2>Emergency Report</h2>
+        <p>Review your emergency information.</p>
+
+        <label for="incidentType">Incident Type</label>
+        <select id="incidentType">
+            <option>Crime / Suspicious Activity</option>
+            <option>Road Incident</option>
+            <option>Public Disturbance</option>
+            <option>Other Emergency</option>
+        </select>
+
+        <label for="description">Additional Information</label>
+        <textarea id="description"
+            placeholder="Describe what happened..."></textarea>
+
+        <div class="report-location">
+            <strong>GPS Coordinates</strong>
+            <p id="reportCoordinates">Waiting for GPS...</p>
+        </div>
+
+        <button class="send-button" id="sendReport">
+            Prepare Emergency SMS
+        </button>
+
+        <button class="secondary-button" id="cancelReport">
+            Cancel
+        </button>
+
+        <p class="note">
+            SMS will open your phone's messaging application.
+            Review the message and press Send yourself.
+        </p>
+    </section>
+
+    <section class="history-panel hidden" id="historyPanel">
+        <h2>My Reports</h2>
+        <div id="reportHistory">No reports yet.</div>
+        <button class="secondary-button" id="closeHistory">
+            Back
+        </button>
+    </section>
+
+    <section class="help-panel hidden" id="helpPanel">
+        <h2>Emergency Help</h2>
+        <p>ALERTO is a supplementary police reporting application.</p>
+        <p>For urgent assistance, use established emergency services as well.</p>
+        <p>SMS availability depends on cellular coverage and your mobile service.</p>
+        <button class="secondary-button" id="closeHelp">
+            Back
+        </button>
+    </section>
+</main>
+
+<footer>
+    ALERTO © 2026 | PNP SAN MIGUEL, BULACAN
+    <p>Emergency reporting prototype</p>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>

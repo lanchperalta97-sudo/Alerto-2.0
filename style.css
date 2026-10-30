@@ -1,0 +1,285 @@
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background: #101827;
+    color: white;
+    min-height: 100vh;
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 20px;
+    border-bottom: 1px solid #334155;
+}
+
+.logo {
+    background: #dc2626;
+    padding: 12px;
+    border-radius: 12px;
+    font-size: 25px;
+}
+
+.header h2 {
+    font-size: 22px;
+}
+
+.header small {
+    color: #aab8cb;
+    font-size: 10px;
+}
+
+.app-label {
+    margin-left: auto;
+    font-size: 10px;
+    color: #4ade80;
+}
+
+main {
+    width: 100%;
+    max-width: 520px;
+    margin: auto;
+    padding: 22px;
+}
+
+.welcome {
+    margin-bottom: 22px;
+}
+
+.welcome h1 {
+    font-size: 25px;
+    margin-bottom: 8px;
+}
+
+.welcome p,
+.hint {
+    color: #aab8cb;
+    font-size: 13px;
+}
+
+.status-card,
+.location-card,
+.report-panel,
+.history-panel,
+.help-panel {
+    background: #1e293b;
+    padding: 20px;
+    border-radius: 15px;
+    margin-bottom: 20px;
+}
+
+.status-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+    font-size: 12px;
+}
+
+.status {
+    padding: 6px 9px;
+    border-radius: 20px;
+    font-size: 10px;
+}
+
+.online {
+    background: #14532d;
+    color: #4ade80;
+}
+
+.offline {
+    background: #713f12;
+    color: #facc15;
+}
+
+.status-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    font-size: 13px;
+    border-top: 1px solid #334155;
+}
+
+.status-row strong {
+    font-size: 12px;
+    color: #4ade80;
+}
+
+.emergency-section {
+    text-align: center;
+    padding: 28px 0;
+}
+
+.emergency-section > p {
+    font-size: 13px;
+    font-weight: bold;
+    margin-bottom: 20px;
+}
+
+.sos-button {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 180px;
+    height: 180px;
+    margin: auto;
+    border: 7px solid #7f1d1d;
+    border-radius: 50%;
+    background: #dc2626;
+    color: white;
+    cursor: pointer;
+    box-shadow: 0 0 25px #dc262655;
+    transition: 0.2s;
+}
+
+.sos-button:hover {
+    transform: scale(1.04);
+    background: #b91c1c;
+}
+
+.sos-button span {
+    font-size: 35px;
+}
+
+.sos-button strong {
+    font-size: 35px;
+}
+
+.sos-button small {
+    font-weight: bold;
+}
+
+.hint {
+    display: block;
+    margin-top: 18px;
+}
+
+.location-card h3 {
+    margin-bottom: 15px;
+}
+
+.location-card p {
+    font-size: 13px;
+    color: #aab8cb;
+    margin-bottom: 15px;
+    line-height: 1.6;
+}
+
+.secondary-button,
+.send-button {
+    padding: 13px;
+    border: none;
+    border-radius: 9px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.secondary-button {
+    background: #334155;
+    color: white;
+}
+
+.send-button {
+    background: #dc2626;
+    color: white;
+    width: 100%;
+    margin: 15px 0 10px;
+}
+
+.quick-access {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.quick-access button {
+    flex: 1;
+}
+
+.report-panel h2,
+.history-panel h2,
+.help-panel h2 {
+    margin-bottom: 10px;
+}
+
+.report-panel label {
+    display: block;
+    margin: 18px 0 8px;
+    font-size: 13px;
+}
+
+.report-panel select,
+.report-panel textarea {
+    width: 100%;
+    padding: 12px;
+    background: #334155;
+    border: 1px solid #475569;
+    border-radius: 8px;
+    color: white;
+}
+
+.report-panel textarea {
+    min-height: 90px;
+    resize: vertical;
+}
+
+.report-location {
+    margin-top: 18px;
+    padding: 12px;
+    background: #334155;
+    border-radius: 8px;
+}
+
+.report-location p {
+    margin-top: 8px;
+    font-size: 13px;
+    color: #aab8cb;
+}
+
+.note {
+    color: #facc15;
+    font-size: 11px;
+    line-height: 1.5;
+    margin-top: 10px;
+}
+
+.hidden {
+    display: none !important;
+}
+
+#reportHistory {
+    color: #cbd5e1;
+    font-size: 13px;
+    line-height: 1.8;
+    margin: 15px 0;
+}
+
+footer {
+    text-align: center;
+    color: #64748b;
+    font-size: 11px;
+    padding: 25px;
+}
+
+@media (max-width: 400px) {
+    main {
+        padding: 15px;
+    }
+
+    .welcome h1 {
+        font-size: 22px;
+    }
+
+    .sos-button {
+        width: 160px;
+        height: 160px;
+    }
+}

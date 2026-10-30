@@ -1,0 +1,12 @@
+
+{
+  "name": "ALERTO - PNP San Miguel",
+  "short_name": "ALERTO",
+  "description": "Offline-first emergency reporting application",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#101827",
+  "theme_color": "#101827"
+}
