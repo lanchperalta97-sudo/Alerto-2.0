@@ -408,4 +408,120 @@ footer {
     .verification-status-card button {
         width: 100%;
     }
+    
+/* VERIFICATION FORM IMPROVEMENTS */
+
+.verification-panel > p {
+    color: #cbd5e1;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.verification-panel input:focus,
+.verification-panel select:focus,
+.report-panel select:focus,
+.report-panel textarea:focus {
+    outline: 2px solid #60a5fa;
+    border-color: #60a5fa;
+}
+
+/* EMERGENCY ACCESS BUTTON IN REMINDER */
+
+#continueEmergencyButton {
+    width: 100%;
+    margin-top: 12px;
+    padding: 13px;
+    border: 1px solid #4ade80;
+    border-radius: 9px;
+    background: #14532d;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+#continueEmergencyButton:hover {
+    background: #166534;
+}
+
+/* DISABLED BUTTONS */
+
+button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* REPORT HISTORY CARDS */
+
+.location-card {
+    background: #334155;
+    padding: 15px;
+    border-radius: 10px;
+    margin-bottom: 12px;
+    overflow-wrap: anywhere;
+}
+
+.location-card p {
+    color: #cbd5e1;
+    font-size: 12px;
+    margin-top: 5px;
+}
+
+/* ACCESSIBILITY */
+
+button:focus-visible {
+    outline: 2px solid #60a5fa;
+    outline-offset: 3px;
+}
+
+/* SMALL SCREEN IMPROVEMENTS */
+
+@media (max-width: 400px) {
+    .verification-modal {
+        padding: 22px;
+    }
+
+    .quick-access {
+        flex-direction: column;
+    }
+
+    .quick-access button {
+        width: 100%;
+    }
+}
+/* ID PHOTO UPLOAD */
+.id-upload-section {
+    margin: 20px 0;
+}
+
+.id-upload-section label {
+    display: block;
+    margin-bottom: 10px;
+    font-weight: bold;
+}
+
+.id-upload-section input[type="file"] {
+    width: 100%;
+    padding: 12px;
+    background: #1e293b;
+    color: white;
+    border: 1px solid #475569;
+    border-radius: 10px;
+}
+
+#idPreviewContainer {
+    margin-top: 15px;
+    padding: 15px;
+    background: #1e293b;
+    border-radius: 12px;
+}
+
+#idPreview {
+    display: block;
+    width: 100%;
+    max-width: 300px;
+    max-height: 220px;
+    object-fit: contain;
+    margin: 10px auto;
+    border-radius: 8px;
+}
 }

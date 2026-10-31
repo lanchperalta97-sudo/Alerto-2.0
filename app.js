@@ -1,14 +1,17 @@
-
-import { db } from "./firebase-config.js";
+console.log("ALERTO APP.JS IS RUNNING!");
+import { db, auth } from "./firebase-config.js";
 
 import {
     collection,
     addDoc,
-    serverTimestamp
+    serverTimestamp,
+    doc,
+    getDoc,
+    setDoc,
+    updateDoc
 } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
 
 import {
-    getAuth,
     signInAnonymously
 } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
 
@@ -17,23 +20,13 @@ import {
 const PNP_SMS_NUMBER = "";
 
 const REPORTS_COLLECTION = "emergencyReports";
+const USERS_COLLECTION = "users";
+const MAX_DISMISSALS = 3;
 
 let currentLatitude = null;
 let currentLongitude = null;
 let authReady = false;
-
-// FIREBASE AUTHENTICATION
-const auth = getAuth();
-
-const authPromise = signInAnonymously(auth)
-    .then(() => {
-        authReady = true;
-        console.log("ALERTO Firebase authentication successful.");
-    })
-    .catch(error => {
-        console.error("Firebase authentication failed:", error);
-        authReady = false;
-    });
+let currentProfile = null;
 
 // HTML ELEMENTS
 const internetElement = document.getElementById("internet");
@@ -47,8 +40,420 @@ const reportPanel = document.getElementById("reportPanel");
 const historyPanel = document.getElementById("historyPanel");
 const helpPanel = document.getElementById("helpPanel");
 
+const verificationStatusCard =
+    document.getElementById("verificationStatusCard");
+const verificationStatusText =
+    document.getElementById("verificationStatusText");
+const verificationReminder =
+    document.getElementById("verificationReminder");
+const verificationPanel =
+    document.getElementById("verificationPanel");
+
+const openVerification =
+    document.getElementById("openVerification");
+const verifyNowButton =
+    document.getElementById("verifyNowButton");
+const dismissVerification =
+    document.getElementById("dismissVerification");
+const submitVerification =
+    document.getElementById("submitVerification");
+const cancelVerification =
+    document.getElementById("cancelVerification");
+
+const fullNameInput = document.getElementById("fullName");
+const barangayInput = document.getElementById("barangay");
+const dismissalMessage = document.getElementById("dismissalMessage");
+const verificationMessage = document.getElementById("verificationMessage");
+
+// FIREBASE AUTHENTICATION
+// FIREBASE AUTHENTICATION
+async function initializeAuthentication() {
+    try {
+        if (!auth.currentUser) {
+            await signInAnonymously(auth);
+        }
+
+        authReady = true;
+        console.log("ALERTO authentication successful.");
+
+        await loadUserProfile();
+
+        console.log("Firebase UID:", auth.currentUser?.uid);
+        console.log("Current Profile:", currentProfile);
+
+    } catch (error) {
+        authReady = false;
+        console.error("Firebase authentication failed:", error);
+
+        alert(
+            "Unable to connect to ALERTO authentication. " +
+            "Your emergency reports can still be saved locally."
+        );
+    }
+}
+
+function getUserReference() {
+    if (!auth.currentUser) {
+        throw new Error("User is not authenticated.");
+    }
+
+    return doc(db, USERS_COLLECTION, auth.currentUser.uid);
+}
+
+// LOAD CITIZEN PROFILE
+async function loadUserProfile() {
+    if (!authReady || !auth.currentUser) return;
+
+    try {
+        const userRef = getUserReference();
+        const snapshot = await getDoc(userRef);
+
+        if (!snapshot.exists()) {
+            currentProfile = null;
+            console.log("No verification profile found.");
+        } else {
+            currentProfile = snapshot.data();
+            console.log("Verification profile loaded:", currentProfile);
+        }
+
+        updateVerificationDisplay();
+
+    } catch (error) {
+        console.error("Could not load citizen profile:", error);
+
+        // Show the verification interface even if profile loading fails.
+        currentProfile = null;
+        updateVerificationDisplay();
+    }
+}
+
+// UPDATE VERIFICATION DISPLAY
+
+function updateVerificationDisplay() {
+    if (!verificationStatusText) return;
+
+    if (!currentProfile) {
+        verificationStatusText.textContent =
+            "Verification profile not submitted.";
+
+        if (openVerification) {
+            openVerification.textContent = "Verify Account";
+        }
+
+        // Show reminder even if the user has no profile yet.
+        showVerificationReminder();
+        return;
+    }
+
+    const status = currentProfile.verificationStatus || "Pending";
+
+    verificationStatusText.textContent =
+        "Verification Status: " + status;
+
+    if (openVerification) {
+        openVerification.textContent =
+            status === "Verified"
+                ? "Verification Complete"
+                : "View Verification";
+    }
+
+    if (status === "Verified") {
+        hideVerificationReminder();
+    } else {
+        showVerificationReminder();
+    }
+}
+
+// VERIFICATION REMINDER
+
+function showVerificationReminder() {
+    if (!verificationReminder) return;
+
+    const status = currentProfile?.verificationStatus || "Pending";
+
+    if (status === "Verified") {
+        hideVerificationReminder();
+        return;
+    }
+
+    verificationReminder.classList.remove("hidden");
+
+    // Use Firestore count if profile exists.
+    // Otherwise, use a local count for new users.
+    const count = currentProfile
+        ? Number(currentProfile.dismissCount || 0)
+        : Number(localStorage.getItem("alertoDismissCount") || 0);
+
+    if (dismissalMessage) {
+        dismissalMessage.textContent =
+            count >= MAX_DISMISSALS
+                ? "This reminder will remain until your account is verified. You can still access emergency reporting."
+                : `You have dismissed this reminder ${count} of ${MAX_DISMISSALS} times.`;
+    }
+
+    if (dismissVerification) {
+        dismissVerification.classList.toggle(
+            "hidden",
+            count >= MAX_DISMISSALS
+        );
+    }
+
+    addContinueButton();
+}
+// ID PHOTO ELEMENTS
+const idPhotoInput = document.getElementById("idPhoto");
+const idPreview = document.getElementById("idPreview");
+const idPreviewContainer = document.getElementById("idPreviewContainer");
+const removeIdPhoto = document.getElementById("removeIdPhoto");
+
+let selectedIdPhotoURL = null;
+
+if (idPhotoInput) {
+    idPhotoInput.addEventListener("change", function() {
+        const file = this.files[0];
+
+        if (!file) return;
+
+        if (!["image/jpeg", "image/png"].includes(file.type)) {
+            alert("Please select a JPG or PNG image.");
+            this.value = "";
+            return;
+        }
+
+        if (file.size > 100 * 1024 * 1024) {
+            alert("Image must be smaller than 100 MB.");
+            this.value = "";
+            return;
+        }
+
+        if (selectedIdPhotoURL) {
+            URL.revokeObjectURL(selectedIdPhotoURL);
+        }
+
+        selectedIdPhotoURL = URL.createObjectURL(file);
+
+        idPreview.src = selectedIdPhotoURL;
+        idPreviewContainer.classList.remove("hidden");
+    });
+}
+
+if (removeIdPhoto) {
+    removeIdPhoto.addEventListener("click", function() {
+        idPhotoInput.value = "";
+
+        if (selectedIdPhotoURL) {
+            URL.revokeObjectURL(selectedIdPhotoURL);
+            selectedIdPhotoURL = null;
+        }
+
+        idPreview.removeAttribute("src");
+        idPreviewContainer.classList.add("hidden");
+    });
+}
+
+function hideVerificationReminder() {
+    if (verificationReminder) {
+        verificationReminder.classList.add("hidden");
+    }
+}
+
+// ALLOW EMERGENCY ACCESS EVEN WHEN REMINDER IS PERSISTENT
+function addContinueButton() {
+    if (!verificationReminder) return;
+
+    const modal = verificationReminder.querySelector(
+        ".verification-modal"
+    );
+
+    if (!modal || document.getElementById("continueEmergencyButton")) {
+        return;
+    }
+
+    const button = document.createElement("button");
+
+    button.id = "continueEmergencyButton";
+    button.type = "button";
+    button.textContent = "Continue to Emergency Reporting";
+    button.className = "primary-button";
+
+    button.addEventListener("click", function() {
+        hideVerificationReminder();
+
+        if (reportPanel) {
+            reportPanel.classList.remove("hidden");
+            reportPanel.scrollIntoView({ behavior: "smooth" });
+        }
+    });
+
+    modal.appendChild(button);
+}
+
+// OPEN VERIFICATION FORM
+function openVerificationForm() {
+    // Close the reminder popup
+    hideVerificationReminder();
+
+    // Hide other panels
+    if (reportPanel) reportPanel.classList.add("hidden");
+    if (historyPanel) historyPanel.classList.add("hidden");
+    if (helpPanel) helpPanel.classList.add("hidden");
+
+    // Open the verification page
+    if (verificationPanel) {
+        verificationPanel.classList.remove("hidden");
+
+        // Scroll to the verification page
+        verificationPanel.scrollIntoView({
+            behavior: "smooth",
+            block: "start"
+        });
+    }
+}
+
+if (openVerification) {
+    openVerification.addEventListener(
+        "click",
+        openVerificationForm
+    );
+}
+
+if (verifyNowButton) {
+    verifyNowButton.addEventListener(
+        "click",
+        openVerificationForm
+    );
+}
+
+// SUBMIT VERIFICATION PROFILE
+if (submitVerification) {
+    submitVerification.addEventListener("click", async function() {
+        if (!authReady || !auth.currentUser) {
+            alert("Authentication is not ready. Please try again.");
+            return;
+        }
+
+        if (currentProfile) {
+            alert(
+                "Your verification profile has already been submitted. " +
+                "Please wait for administrator review."
+            );
+            return;
+        }
+
+        const fullName = fullNameInput?.value.trim() || "";
+        const barangay = barangayInput?.value || "";
+
+        if (!fullName || !barangay) {
+            alert("Please enter your full name and select your barangay.");
+            return;
+        }
+
+        submitVerification.disabled = true;
+
+        try {
+            await setDoc(getUserReference(), {
+                fullName: fullName,
+                barangay: barangay,
+                verificationStatus: "Pending",
+                dismissCount: 0,
+                createdAt: serverTimestamp()
+            });
+
+            currentProfile = {
+                fullName: fullName,
+                barangay: barangay,
+                verificationStatus: "Pending",
+                dismissCount: 0
+            };
+
+            updateVerificationDisplay();
+
+            if (verificationMessage) {
+                verificationMessage.textContent =
+                    "Your verification request has been submitted. " +
+                    "Please wait for administrator review.";
+            }
+
+            alert(
+                "Verification request submitted successfully.\n\n" +
+                "Status: Pending"
+            );
+
+            verificationPanel.classList.add("hidden");
+            showVerificationReminder();
+
+        } catch (error) {
+            console.error("Verification submission failed:", error);
+
+            alert(
+                "Could not submit your verification request. " +
+                "Please check your internet connection and try again."
+            );
+
+        } finally {
+            submitVerification.disabled = false;
+        }
+    });
+}
+
+// CANCEL VERIFICATION FORM
+if (cancelVerification) {
+    cancelVerification.addEventListener("click", function() {
+        verificationPanel.classList.add("hidden");
+    });
+}
+
+// DISMISS VERIFICATION REMINDER
+
+if (dismissVerification) {
+    dismissVerification.addEventListener("click", async function() {
+        const count = currentProfile
+            ? Number(currentProfile.dismissCount || 0)
+            : Number(localStorage.getItem("alertoDismissCount") || 0);
+
+        if (count >= MAX_DISMISSALS) {
+            showVerificationReminder();
+            return;
+        }
+
+        dismissVerification.disabled = true;
+
+        try {
+            const newCount = count + 1;
+
+            if (currentProfile && auth.currentUser) {
+                await updateDoc(getUserReference(), {
+                    dismissCount: newCount
+                });
+
+                currentProfile.dismissCount = newCount;
+            } else {
+                localStorage.setItem(
+                    "alertoDismissCount",
+                    String(newCount)
+                );
+            }
+
+            if (newCount >= MAX_DISMISSALS) {
+                showVerificationReminder();
+            } else {
+                hideVerificationReminder();
+            }
+
+        } catch (error) {
+            console.error("Could not update dismissal count:", error);
+            alert("Could not update the reminder. Please try again.");
+        } finally {
+            dismissVerification.disabled = false;
+        }
+    });
+}
+
+
 // INTERNET STATUS
 function checkInternet() {
+    if (!internetElement || !modeElement) return;
+
     if (navigator.onLine) {
         internetElement.textContent = "Connected";
         modeElement.textContent = "ONLINE";
@@ -62,45 +467,58 @@ function checkInternet() {
 
 window.addEventListener("online", checkInternet);
 window.addEventListener("offline", checkInternet);
+window.addEventListener("online", syncPendingReports);
 
 checkInternet();
 
-window.addEventListener("online", syncPendingReports);
-
 // SMS STATUS
-smsElement.textContent = "Check phone and SIM";
+if (smsElement) {
+    smsElement.textContent = "Check phone and SIM";
+}
 
 // GPS FUNCTION
 function getGPS() {
     if (!navigator.geolocation) {
-        gpsElement.textContent = "Not supported";
-        locationText.textContent = "GPS is not supported.";
+        if (gpsElement) gpsElement.textContent = "Not supported";
+        if (locationText) {
+            locationText.textContent = "GPS is not supported.";
+        }
         return;
     }
 
-    gpsElement.textContent = "Getting location...";
-    locationText.textContent = "Waiting for GPS coordinates...";
+    if (gpsElement) gpsElement.textContent = "Getting location...";
+    if (locationText) {
+        locationText.textContent = "Waiting for GPS coordinates...";
+    }
 
     navigator.geolocation.getCurrentPosition(
         function(position) {
             currentLatitude = position.coords.latitude;
             currentLongitude = position.coords.longitude;
 
-            gpsElement.textContent = "Available";
+            if (gpsElement) gpsElement.textContent = "Available";
 
-            locationText.textContent =
-                "Latitude: " + currentLatitude.toFixed(6) +
-                "\nLongitude: " + currentLongitude.toFixed(6);
+            if (locationText) {
+                locationText.textContent =
+                    "Latitude: " + currentLatitude.toFixed(6) +
+                    "\nLongitude: " + currentLongitude.toFixed(6);
+            }
 
-            reportCoordinates.textContent =
-                currentLatitude.toFixed(6) + ", " +
-                currentLongitude.toFixed(6);
+            if (reportCoordinates) {
+                reportCoordinates.textContent =
+                    currentLatitude.toFixed(6) + ", " +
+                    currentLongitude.toFixed(6);
+            }
         },
 
-        function(error) {
-            gpsElement.textContent = "Unavailable";
-            locationText.textContent =
-                "Unable to get GPS location. Check permissions and location settings.";
+        function() {
+            if (gpsElement) gpsElement.textContent = "Unavailable";
+
+            if (locationText) {
+                locationText.textContent =
+                    "Unable to get GPS location. " +
+                    "Check permissions and location settings.";
+            }
         },
 
         {
@@ -111,8 +529,7 @@ function getGPS() {
     );
 }
 
-document.getElementById("refreshGPS")
-    .addEventListener("click", getGPS);
+document.getElementById("refreshGPS")?.addEventListener("click", getGPS);
 
 getGPS();
 
@@ -146,15 +563,19 @@ function saveReport(report) {
     );
 }
 
-// FIREBASE SUBMISSION
+// FIREBASE REPORT SUBMISSION
 async function submitToFirebase(report) {
+    console.log("Starting Firebase report upload...");
+    console.log("Firebase Project:", db.app.options.projectId);
+    console.log("Collection:", REPORTS_COLLECTION);
+    console.log("Report:", report);
+
     if (!navigator.onLine) {
+        console.warn("Device is offline. Report was not uploaded.");
         return false;
     }
 
-    await authPromise;
-
-    if (!authReady) {
+    if (!authReady || !auth.currentUser) {
         throw new Error("Firebase authentication is not ready.");
     }
 
@@ -172,6 +593,9 @@ async function submitToFirebase(report) {
         }
     );
 
+    console.log("REPORT SUCCESSFULLY UPLOADED!");
+    console.log("Firestore Document ID:", docRef.id);
+
     report.firebaseDocId = docRef.id;
     report.status = "Received by ALERTO server";
     report.syncStatus = "Synced";
@@ -181,9 +605,9 @@ async function submitToFirebase(report) {
     return true;
 }
 
-// SYNC REPORTS THAT WERE SAVED WHILE OFFLINE
+// SYNC REPORTS SAVED WHILE OFFLINE
 async function syncPendingReports() {
-    if (!navigator.onLine) return;
+    if (!navigator.onLine || !authReady) return;
 
     const reports = getReports();
 
@@ -193,8 +617,13 @@ async function syncPendingReports() {
         try {
             await submitToFirebase(report);
             console.log("Synced report:", report.id);
+
         } catch (error) {
-            console.error("Could not sync report:", report.id, error);
+            console.error(
+                "Could not sync report:",
+                report.id,
+                error
+            );
             break;
         }
     }
@@ -204,18 +633,18 @@ async function syncPendingReports() {
 
 // OPEN EMERGENCY FORM
 document.getElementById("sosButton")
-    .addEventListener("click", function() {
-        reportPanel.classList.remove("hidden");
-        historyPanel.classList.add("hidden");
-        helpPanel.classList.add("hidden");
+    ?.addEventListener("click", function() {
+        hideVerificationReminder();
+
+        reportPanel?.classList.remove("hidden");
+        historyPanel?.classList.add("hidden");
+        helpPanel?.classList.add("hidden");
 
         if (currentLatitude === null) {
             getGPS();
         }
 
-        reportPanel.scrollIntoView({
-            behavior: "smooth"
-        });
+        reportPanel?.scrollIntoView({ behavior: "smooth" });
     });
 
 // GENERATE INCIDENT ID
@@ -225,24 +654,24 @@ function generateIncidentID() {
 
 // SUBMIT EMERGENCY REPORT
 document.getElementById("sendReport")
-    .addEventListener("click", async function() {
+    ?.addEventListener("click", async function() { console.log("SEND REPORT BUTTON CLICKED!");
 
-        if (currentLatitude === null ||
-            currentLongitude === null) {
-            alert("GPS location is unavailable. Please obtain your location first.");
+        if (
+            currentLatitude === null ||
+            currentLongitude === null
+        ) {
+            alert(
+                "GPS location is unavailable. " +
+                "Please obtain your location first."
+            );
             return;
         }
 
         const incidentType =
-            document.getElementById("incidentType").value;
+            document.getElementById("incidentType")?.value || "";
 
         const description =
-            document.getElementById("description").value.trim();
-
-        if (!description) {
-            alert("Please enter a description of the incident.");
-            return;
-        }
+            document.getElementById("description")?.value.trim() || "";
 
         const sendButton = document.getElementById("sendReport");
         sendButton.disabled = true;
@@ -257,51 +686,62 @@ document.getElementById("sendReport")
             longitude: currentLongitude,
             createdAt: new Date().toISOString(),
             communicationMethod: navigator.onLine ? "Internet" : "Offline",
-            status: navigator.onLine ? "Submitting..." : "Saved offline",
-            syncStatus: navigator.onLine ? "Pending" : "Pending"
+            status: navigator.onLine
+                ? "Waiting for upload"
+                : "Saved offline",
+            syncStatus: "Pending"
         };
 
-        // Save locally first.
+        // Save locally before attempting upload.
         saveReport(report);
 
-        if (navigator.onLine) {
-            try {
+        try {
+            if (!navigator.onLine) {
+                alert(
+                    "You are offline.\n\n" +
+                    "Your report is saved on this device and queued " +
+                    "for upload when internet returns.\n\n" +
+                    "Incident ID: " + incidentID +
+                    "\n\nIt has NOT reached the ALERTO server or PNP dashboard."
+                );
+
+            } else {
+                if (!authReady) {
+                    await initializeAuthentication();
+                }
+
                 await submitToFirebase(report);
 
                 alert(
-                    "Your report was uploaded to ALERTO.\n\n" +
+                    "Your report was uploaded to the ALERTO server.\n\n" +
                     "Incident ID: " + incidentID +
-                    "\nThe PNP dashboard can retrieve this report."
-                );
-            } catch (error) {
-                console.error("Firebase submission error:", error);
-
-                report.status = "Saved locally - upload failed";
-                report.syncStatus = "Pending";
-                saveReport(report);
-
-                alert(
-                    "Your report is saved on this device, " +
-                    "but could not be uploaded to Firebase.\n\n" +
-                    "It will be retried when the connection is available.\n\n" +
-                    "Incident ID: " + incidentID
+                    "\n\nThis confirms server upload only. " +
+                    "It does not confirm that PNP personnel have received or dispatched it."
                 );
             }
-        } else {
-            alert(
-                "You are offline.\n\n" +
-                "Your report is saved on this device and will be " +
-                "queued for upload when internet returns.\n\n" +
-                "Incident ID: " + incidentID +
-                "\n\nIt has NOT yet reached the PNP dashboard."
-            );
-        }
 
-        sendButton.disabled = false;
-        showHistory();
+        } catch (error) {
+            console.error("Report submission error:", error);
+
+            report.status = "Saved locally - upload failed";
+            report.syncStatus = "Pending";
+            saveReport(report);
+
+            alert(
+                "Your report is saved on this device, " +
+                "but could not be uploaded.\n\n" +
+                "It will be retried when the connection is available.\n\n" +
+                "Incident ID: " + incidentID +
+                "\n\nIt has NOT reached the ALERTO server or PNP dashboard."
+            );
+
+        } finally {
+            sendButton.disabled = false;
+            showHistory();
+        }
     });
 
-// DISPLAY HISTORY
+// ESCAPE HTML
 function escapeHTML(value) {
     return String(value).replace(/[&<>"']/g, function(char) {
         return {
@@ -314,12 +754,16 @@ function escapeHTML(value) {
     });
 }
 
+// DISPLAY REPORT HISTORY
 function showHistory() {
     const reports = getReports();
     const history = document.getElementById("reportHistory");
 
+    if (!history) return;
+
     if (reports.length === 0) {
         history.textContent = "No reports yet.";
+
     } else {
         history.innerHTML = reports.map(report => `
             <div class="location-card">
@@ -333,36 +777,36 @@ function showHistory() {
         `).join("");
     }
 
-    historyPanel.classList.remove("hidden");
-    reportPanel.classList.add("hidden");
-    helpPanel.classList.add("hidden");
+    historyPanel?.classList.remove("hidden");
+    reportPanel?.classList.add("hidden");
+    helpPanel?.classList.add("hidden");
 }
 
 document.getElementById("historyButton")
-    .addEventListener("click", showHistory);
+    ?.addEventListener("click", showHistory);
 
 document.getElementById("closeHistory")
-    .addEventListener("click", function() {
-        historyPanel.classList.add("hidden");
+    ?.addEventListener("click", function() {
+        historyPanel?.classList.add("hidden");
     });
 
 // HELP
 document.getElementById("helpButton")
-    .addEventListener("click", function() {
-        helpPanel.classList.remove("hidden");
-        reportPanel.classList.add("hidden");
-        historyPanel.classList.add("hidden");
+    ?.addEventListener("click", function() {
+        helpPanel?.classList.remove("hidden");
+        reportPanel?.classList.add("hidden");
+        historyPanel?.classList.add("hidden");
     });
 
 document.getElementById("closeHelp")
-    .addEventListener("click", function() {
-        helpPanel.classList.add("hidden");
+    ?.addEventListener("click", function() {
+        helpPanel?.classList.add("hidden");
     });
 
 // CANCEL REPORT
 document.getElementById("cancelReport")
-    .addEventListener("click", function() {
-        reportPanel.classList.add("hidden");
+    ?.addEventListener("click", function() {
+        reportPanel?.classList.add("hidden");
     });
 
 // OFFLINE APP SUPPORT
@@ -374,3 +818,7 @@ if ("serviceWorker" in navigator) {
             });
     });
 }
+
+// START ALERTO
+initializeAuthentication();
+

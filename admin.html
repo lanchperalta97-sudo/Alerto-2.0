@@ -87,31 +87,53 @@
 
 
             <!-- SUMMARY CARDS -->
-            <section class="summary-grid">
+            <div class="summary-grid">
 
-                <div class="summary-card">
-                    <span>Total Reports</span>
-                    <strong id="totalReports">0</strong>
-                </div>
+    <div class="summary-card">
+        <span>Total Reports</span>
+        <strong id="totalReports">0</strong>
+    </div>
 
-                <div class="summary-card">
-                    <span>Received</span>
-                    <strong id="receivedReports">0</strong>
-                </div>
+    <div class="summary-card">
+        <span>Received</span>
+        <strong id="receivedReports">0</strong>
+    </div>
 
-                <div class="summary-card">
-                    <span>Under Review</span>
-                    <strong id="reviewReports">0</strong>
-                </div>
+    <div class="summary-card">
+        <span>Under Review</span>
+        <strong id="reviewReports">0</strong>
+    </div>
 
-                <div class="summary-card">
-                    <span>Dispatched</span>
-                    <strong id="dispatchedReports">0</strong>
-                </div>
+    <div class="summary-card">
+        <span>Dispatched</span>
+        <strong id="dispatchedReports">0</strong>
+    </div>
 
-            </section>
+    <div class="summary-card">
+        <span>Resolved</span>
+        <strong id="resolvedReports">0</strong>
+    </div>
 
+</div>
+<!-- CITIZEN VERIFICATION REQUESTS -->
+<section class="verification-section">
 
+    <div class="section-heading">
+        <div>
+            <h2>Citizen Verification Requests</h2>
+            <p>Review and approve citizen verification profiles.</p>
+        </div>
+
+        <span id="verificationCount">0 pending requests</span>
+    </div>
+
+    <div id="verificationList" class="verification-list">
+        <p class="empty-message">
+            Loading verification requests...
+        </p>
+    </div>
+
+</section>
             <!-- MAP AND REPORT LIST -->
             <section class="workspace">
 

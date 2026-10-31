@@ -96,30 +96,39 @@
     </section>
 
     <!-- VERIFICATION REMINDER -->
-    <section class="verification-overlay hidden" id="verificationReminder">
-        <div class="verification-modal">
-            <div class="verification-icon">🛡️</div>
+    
+<!-- VERIFICATION REMINDER -->
+<section class="verification-overlay hidden" id="verificationReminder">
+    <div class="verification-modal">
+            <button
+         class="secondary-button hidden"
+         id="continueEmergencyButton"
+        type="button">
+        Continue to Emergency Reporting
+        </button>
+        <div class="verification-icon">🛡️</div>
 
-            <h2>Verify Your Account</h2>
+        <h2>Verify Your Account</h2>
 
-            <p>
-                Account verification helps ALERTO administrators
-                review reports and discourage misuse.
-            </p>
+        <p>
+            Account verification helps ALERTO administrators
+            review citizen profiles and discourage misuse.
+        </p>
 
-            <p id="dismissalMessage">
-                You can continue to emergency reporting without verifying.
-            </p>
+        <p id="dismissalMessage">
+            Please submit your information for administrator review.
+        </p>
 
-            <button class="send-button" id="verifyNowButton">
-                Verify Now
-            </button>
+        <button class="send-button" id="verifyNowButton">
+            Verify Now
+        </button>
 
-            <button class="secondary-button" id="dismissVerification">
-                Continue to ALERTO
-            </button>
-        </div>
-    </section>
+        <button class="secondary-button" id="dismissVerification">
+            Remind Me Later
+        </button>
+    </div>
+</section>
+
 
     <!-- VERIFICATION FORM -->
     <section class="verification-panel hidden" id="verificationPanel">
@@ -142,6 +151,37 @@
             <option value="Camias">Camias</option>
             <option value="Calaanan">Calaanan</option>
         </select>
+        
+        <!-- SAMPLE ID PHOTO ATTACHMENT -->
+<div class="id-upload-section">
+    <label for="idPhoto">ID Photo Attachment (Demo Only)</label>
+
+    <input
+        type="file"
+        id="idPhoto"
+        accept="image/png, image/jpeg"
+    >
+
+    <div id="idPreviewContainer" class="hidden">
+        <p>Image Preview:</p>
+        <img
+            id="idPreview"
+            alt="Sample ID preview"
+        >
+        <button
+            type="button"
+            class="secondary-button"
+            id="removeIdPhoto"
+        >
+            Remove Image
+        </button>
+    </div>
+
+    <p class="note">
+        Upload a fictional sample ID image only.
+        Do not upload real government IDs.
+    </p>
+</div>
 
         <p class="note">
             This information will be submitted for review.
@@ -184,8 +224,8 @@
         </div>
 
         <button class="send-button" id="sendReport">
-            Prepare Emergency SMS
-        </button>
+    Submit Emergency Report
+</button>
 
         <button class="secondary-button" id="cancelReport">
             Cancel

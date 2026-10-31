@@ -3,8 +3,6 @@ import { db } from "./firebase-config.js";
 
 import {
     collection,
-    query,
-    orderBy,
     onSnapshot,
     doc,
     updateDoc
@@ -17,7 +15,7 @@ import {
     signOut
 } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
 
-// Only this administrator UID can use this dashboard.
+// ADMIN CONFIGURATION
 const ADMIN_UID = "R669uWbRnUbzhM2WSRKDXmdjG2E2";
 
 const auth = getAuth();
@@ -27,30 +25,15 @@ const dashboard = document.getElementById("dashboard");
 const loginForm = document.getElementById("loginForm");
 const loginMessage = document.getElementById("loginMessage");
 const loginButton = document.getElementById("loginButton");
-
 const reportsList = document.getElementById("reportsList");
+
+const verificationList = document.getElementById("verificationList");
+const verificationCount = document.getElementById("verificationCount");
 
 let map = null;
 let markers = {};
 let unsubscribeReports = null;
-
-
-// MAP INITIALIZATION
-function initializeMap() {
-    if (map) return;
-
-    // Initial map center: San Miguel, Bulacan.
-    map = L.map("map").setView([14.79, 120.99], 12);
-
-    L.tileLayer(
-        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-        {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-            maxZoom: 19
-        }
-    ).addTo(map);
-}
-
+let unsubscribeUsers = null;
 
 // HTML ESCAPING
 function escapeHTML(value) {
@@ -62,7 +45,6 @@ function escapeHTML(value) {
         "'": "&#39;"
     })[character]);
 }
-
 
 // DATE FORMATTING
 function formatDate(value) {
@@ -79,33 +61,68 @@ function formatDate(value) {
     return date.toLocaleString();
 }
 
+// MAP INITIALIZATION
+function initializeMap() {
+    if (map) return;
+
+    map = L.map("map").setView([14.79, 120.99], 12);
+
+    L.tileLayer(
+        "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+        {
+            attribution: "Tiles &copy; Esri",
+            maxZoom: 19
+        }
+    ).addTo(map);
+}
 
 // SUMMARY COUNTS
 function updateSummary(reports) {
-    document.getElementById("totalReports").textContent =
-        reports.length;
+    const updateElement = (id, value) => {
+        const element = document.getElementById(id);
 
-    document.getElementById("receivedReports").textContent =
+        if (element) {
+            element.textContent = value;
+        }
+    };
+
+    updateElement("totalReports", reports.length);
+
+    updateElement(
+        "receivedReports",
         reports.filter(report =>
             report.status === "Received by ALERTO server"
-        ).length;
+        ).length
+    );
 
-    document.getElementById("reviewReports").textContent =
+    updateElement(
+        "reviewReports",
         reports.filter(report =>
             report.status === "Under Review"
-        ).length;
+        ).length
+    );
 
-    document.getElementById("dispatchedReports").textContent =
+    updateElement(
+        "dispatchedReports",
         reports.filter(report =>
             report.status === "Dispatched"
-        ).length;
+        ).length
+    );
 
-    document.getElementById("reportCount").textContent =
-        reports.length + (reports.length === 1 ? " report" : " reports");
+    updateElement(
+        "resolvedReports",
+        reports.filter(report =>
+            report.status === "Resolved"
+        ).length
+    );
+
+    updateElement(
+        "reportCount",
+        reports.length + (reports.length === 1 ? " report" : " reports")
+    );
 }
 
-
-// CREATE MAP MARKER
+// CREATE OR UPDATE MAP MARKER
 function addReportMarker(report, documentId) {
     const latitude = Number(report.latitude);
     const longitude = Number(report.longitude);
@@ -118,15 +135,25 @@ function addReportMarker(report, documentId) {
         longitude < -180 ||
         longitude > 180
     ) {
+        console.warn("Invalid GPS coordinates:", documentId);
         return;
     }
 
+    const directionsURL =
+        `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}&travelmode=driving`;
+
     const popupContent = `
-        <strong>${escapeHTML(report.incidentId)}</strong>
-        <br>
-        ${escapeHTML(report.incidentType)}
-        <br>
-        Status: ${escapeHTML(report.status)}
+        <div>
+            <strong>${escapeHTML(report.incidentId)}</strong><br>
+            ${escapeHTML(report.incidentType)}<br>
+            Status: ${escapeHTML(report.status)}
+            <br><br>
+            <a href="${directionsURL}"
+               target="_blank"
+               rel="noopener noreferrer">
+                Get Directions
+            </a>
+        </div>
     `;
 
     if (markers[documentId]) {
@@ -142,14 +169,14 @@ function addReportMarker(report, documentId) {
     }
 }
 
-
 // DISPLAY REPORTS
 function displayReports(reports) {
     updateSummary(reports);
 
-    const currentIds = new Set(reports.map(report => report.documentId));
+    const currentIds = new Set(
+        reports.map(report => report.documentId)
+    );
 
-    // Remove markers for reports no longer in the query.
     Object.keys(markers).forEach(id => {
         if (!currentIds.has(id)) {
             map.removeLayer(markers[id]);
@@ -166,75 +193,121 @@ function displayReports(reports) {
         return;
     }
 
-    reportsList.innerHTML = reports.map(report => `
-        <article
-    class="report-card"
-    data-report-id="${escapeHTML(report.documentId)}"
-    title="Click to view this report on the map"
->
-            <h3>${escapeHTML(report.incidentType)}</h3>
+    reportsList.innerHTML = reports.map(report => {
+        const latitude = Number(report.latitude);
+        const longitude = Number(report.longitude);
 
-            <p class="incident-id">
-                ${escapeHTML(report.incidentId)}
-            </p>
+        const coordinatesValid =
+            Number.isFinite(latitude) &&
+            Number.isFinite(longitude) &&
+            latitude >= -90 &&
+            latitude <= 90 &&
+            longitude >= -180 &&
+            longitude <= 180;
 
-            <p>
-                ${escapeHTML(report.description)}
-            </p>
-
-            <p>
-                <strong>Coordinates:</strong><br>
-                ${Number(report.latitude).toFixed(6)},
-                ${Number(report.longitude).toFixed(6)}
-            </p>
-
-            <p>
-                <strong>Submitted:</strong><br>
-                ${escapeHTML(formatDate(report.createdAt))}
-            </p>
-
-            <p>
-                <strong>Connection:</strong>
-                ${escapeHTML(report.communicationMethod)}
-            </p>
-
-            <span class="report-status">
-                ${escapeHTML(report.status)}
-            </span>
-
-            <select
-                class="status-select"
-                data-id="${escapeHTML(report.documentId)}"
-                aria-label="Change report status"
+        return `
+            <article
+                class="report-card"
+                data-report-id="${escapeHTML(report.documentId)}"
+                title="Click to view this report on the map"
             >
-                <option value="Received by ALERTO server"
-                    ${report.status === "Received by ALERTO server" ? "selected" : ""}>
-                    Received
-                </option>
+                <h3>${escapeHTML(report.incidentType)}</h3>
 
-                <option value="Under Review"
-                    ${report.status === "Under Review" ? "selected" : ""}>
-                    Under Review
-                </option>
+                <p class="incident-id">
+                    ${escapeHTML(report.incidentId)}
+                </p>
 
-                <option value="Dispatched"
-                    ${report.status === "Dispatched" ? "selected" : ""}>
-                    Dispatched
-                </option>
+                <p>${escapeHTML(report.description)}</p>
 
-                <option value="Resolved"
-                    ${report.status === "Resolved" ? "selected" : ""}>
-                    Resolved
-                </option>
-            </select>
-        </article>
-    `).join("");
+                <p>
+                    <strong>Coordinates:</strong><br>
+                    ${
+                        coordinatesValid
+                            ? `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`
+                            : "Invalid GPS coordinates"
+                    }
+                </p>
+
+                <p>
+                    <strong>Submitted:</strong><br>
+                    ${escapeHTML(formatDate(report.createdAt))}
+                </p>
+
+                <p>
+                    <strong>Connection:</strong>
+                    ${escapeHTML(report.communicationMethod)}
+                </p>
+
+                <span class="report-status">
+                    ${escapeHTML(report.status)}
+                </span>
+
+                <select
+                    class="status-select"
+                    data-id="${escapeHTML(report.documentId)}"
+                    aria-label="Change report status"
+                >
+                    <option value="Received by ALERTO server"
+                        ${report.status === "Received by ALERTO server" ? "selected" : ""}>
+                        Received
+                    </option>
+
+                    <option value="Under Review"
+                        ${report.status === "Under Review" ? "selected" : ""}>
+                        Under Review
+                    </option>
+
+                    <option value="Dispatched"
+                        ${report.status === "Dispatched" ? "selected" : ""}>
+                        Dispatched
+                    </option>
+
+                    <option value="Resolved"
+                        ${report.status === "Resolved" ? "selected" : ""}>
+                        Resolved
+                    </option>
+                </select>
+            </article>
+        `;
+    }).join("");
 
     reports.forEach(report => {
         addReportMarker(report, report.documentId);
     });
+
+    console.log("Reports displayed:", reports.length);
 }
 
+// CLICK REPORT CARD TO FOCUS MAP
+reportsList.addEventListener("click", function(event) {
+    if (event.target.closest(".status-select")) return;
+
+    const reportCard = event.target.closest(".report-card");
+
+    if (!reportCard) return;
+
+    const documentId = reportCard.dataset.reportId;
+    const marker = markers[documentId];
+
+    if (!marker || !map) {
+        alert("This report does not have valid GPS coordinates.");
+        return;
+    }
+
+    const position = marker.getLatLng();
+
+    map.flyTo(position, 17, {
+        animate: true,
+        duration: 1.2
+    });
+
+    marker.openPopup();
+
+    document.getElementById("map").scrollIntoView({
+        behavior: "smooth",
+        block: "center"
+    });
+});
 
 // CHANGE REPORT STATUS
 reportsList.addEventListener("change", async function(event) {
@@ -266,93 +339,247 @@ reportsList.addEventListener("change", async function(event) {
         );
 
         console.log("Report status updated:", documentId);
+
     } catch (error) {
         console.error("Status update failed:", error);
-        alert("Could not update report status. Check your access and internet connection.");
+        alert("Could not update report status: " + error.message);
+
     } finally {
         select.disabled = false;
     }
 });
 
-
-// LIVE FIRESTORE LISTENER
+// LOAD REPORTS FROM FIRESTORE
 function loadReports() {
     if (unsubscribeReports) {
         unsubscribeReports();
+        unsubscribeReports = null;
     }
 
     initializeMap();
 
-    const reportsQuery = query(
-        collection(db, "emergencyReports"),
-        orderBy("createdAt", "desc")
-    );
+    reportsList.innerHTML = `
+        <p class="empty-message">Loading emergency reports...</p>
+    `;
+
+    console.log("Connecting to emergencyReports...");
 
     unsubscribeReports = onSnapshot(
-        reportsQuery,
+        collection(db, "emergencyReports"),
+
         snapshot => {
             const reports = snapshot.docs.map(item => ({
                 documentId: item.id,
                 ...item.data()
             }));
 
+            reports.sort((a, b) => {
+                const dateA = a.createdAt?.toMillis
+                    ? a.createdAt.toMillis()
+                    : 0;
+
+                const dateB = b.createdAt?.toMillis
+                    ? b.createdAt.toMillis()
+                    : 0;
+
+                return dateB - dateA;
+            });
+
+            console.log("Emergency reports found:", reports.length);
             displayReports(reports);
-            
-// CLICK REPORT TO FOCUS ITS MAP LOCATION
-reportsList.addEventListener("click", function(event) {
-    // Ignore clicks on the status dropdown.
-    if (event.target.closest(".status-select")) return;
-
-    const reportCard = event.target.closest(".report-card");
-
-    if (!reportCard) return;
-
-    const documentId = reportCard.dataset.reportId;
-    const marker = markers[documentId];
-
-    if (!marker || !map) {
-        alert("This report does not have valid GPS coordinates.");
-        return;
-    }
-
-    const position = marker.getLatLng();
-
-    // Zoom into the selected report's location.
-    map.flyTo(position, 17, {
-        animate: true,
-        duration: 1.2
-    });
-
-    // Open the corresponding map pin.
-    marker.openPopup();
-
-    // Scroll the map into view.
-    document.getElementById("map").scrollIntoView({
-        behavior: "smooth",
-        block: "center"
-    });
-});
-
         },
+
         error => {
-            console.error("Could not load reports:", error);
+            console.error("FIRESTORE REPORT ERROR:", error);
 
             reportsList.innerHTML = `
                 <p class="empty-message">
-                    Unable to load reports. Check administrator permissions and internet connection.
+                    Failed to retrieve reports.<br>
+                    ${escapeHTML(error.message)}
                 </p>
             `;
         }
     );
 }
 
+// DISPLAY VERIFICATION REQUESTS
+function displayVerificationRequests(users) {
+    if (!verificationList || !verificationCount) {
+        console.error("Verification HTML elements are missing.");
+        return;
+    }
+
+    const pendingUsers = users.filter(user =>
+        user.verificationStatus === "Pending"
+    );
+
+    verificationCount.textContent =
+        `${pendingUsers.length} pending request${pendingUsers.length === 1 ? "" : "s"}`;
+
+    if (users.length === 0) {
+        verificationList.innerHTML = `
+            <p class="empty-message">
+                No citizen verification profiles found.
+            </p>
+        `;
+        return;
+    }
+
+    if (pendingUsers.length === 0) {
+        verificationList.innerHTML = `
+            <p class="empty-message">
+                There are no pending verification requests.
+            </p>
+        `;
+        return;
+    }
+
+    verificationList.innerHTML = pendingUsers.map(user => `
+        <article class="verification-card">
+            <div class="verification-details">
+                <h3>${escapeHTML(user.fullName || "Name not provided")}</h3>
+
+                <p>
+                    <strong>Barangay:</strong>
+                    ${escapeHTML(user.barangay || "Not provided")}
+                </p>
+
+                <p>
+                    <strong>Status:</strong>
+                    <span class="verification-status pending">
+                        Pending
+                    </span>
+                </p>
+
+                <p>
+                    <strong>Submitted:</strong>
+                    ${escapeHTML(formatDate(user.createdAt))}
+                </p>
+
+                <p class="verification-uid">
+                    <strong>Account ID:</strong>
+                    ${escapeHTML(user.documentId)}
+                </p>
+            </div>
+
+            <button
+                type="button"
+                class="approve-verification-button"
+                data-user-id="${escapeHTML(user.documentId)}"
+            >
+                Approve Verification
+            </button>
+        </article>
+    `).join("");
+
+    console.log("Pending verification requests:", pendingUsers.length);
+}
+
+// LOAD CITIZEN PROFILES FROM FIRESTORE
+function loadVerificationRequests() {
+    if (unsubscribeUsers) {
+        unsubscribeUsers();
+        unsubscribeUsers = null;
+    }
+
+    if (!verificationList) {
+        console.error("Missing verificationList in admin.html.");
+        return;
+    }
+
+    verificationList.innerHTML = `
+        <p class="empty-message">
+            Loading verification requests...
+        </p>
+    `;
+
+    console.log("Connecting to users collection...");
+
+    unsubscribeUsers = onSnapshot(
+        collection(db, "users"),
+
+        snapshot => {
+            const users = snapshot.docs.map(item => ({
+                documentId: item.id,
+                ...item.data()
+            }));
+
+            console.log("Citizen profiles found:", users.length);
+
+            displayVerificationRequests(users);
+        },
+
+        error => {
+            console.error("VERIFICATION FIRESTORE ERROR:", error);
+
+            verificationList.innerHTML = `
+                <p class="empty-message">
+                    Could not load verification requests.<br>
+                    ${escapeHTML(error.message)}
+                </p>
+            `;
+        }
+    );
+}
+
+// APPROVE CITIZEN VERIFICATION
+if (verificationList) {
+    verificationList.addEventListener("click", async function(event) {
+        const button = event.target.closest(
+            ".approve-verification-button"
+        );
+
+        if (!button) return;
+
+        const userId = button.dataset.userId;
+
+        const confirmed = confirm(
+            "Are you sure you want to approve this citizen's verification?"
+        );
+
+        if (!confirmed) return;
+
+        button.disabled = true;
+        button.textContent = "Approving...";
+
+        try {
+            await updateDoc(
+                doc(db, "users", userId),
+                {
+                    verificationStatus: "Verified"
+                }
+            );
+
+            console.log("Citizen verification approved:", userId);
+
+            alert(
+                "Verification approved successfully!\n\n" +
+                "The citizen's status is now Verified."
+            );
+
+        } catch (error) {
+            console.error("Verification approval failed:", error);
+
+            alert(
+                "Could not approve verification.\n\n" +
+                error.message
+            );
+
+            button.disabled = false;
+            button.textContent = "Approve Verification";
+        }
+    });
+}
 
 // ADMIN LOGIN
 loginForm.addEventListener("submit", async function(event) {
     event.preventDefault();
 
-    const email = document.getElementById("adminEmail").value.trim();
-    const password = document.getElementById("adminPassword").value;
+    const email =
+        document.getElementById("adminEmail").value.trim();
+
+    const password =
+        document.getElementById("adminPassword").value;
 
     loginButton.disabled = true;
     loginButton.textContent = "Signing in...";
@@ -365,12 +592,16 @@ loginForm.addEventListener("submit", async function(event) {
             password
         );
 
+        console.log("Logged-in UID:", credential.user.uid);
+
         if (credential.user.uid !== ADMIN_UID) {
             await signOut(auth);
-            throw new Error("This account is not authorized for the ALERTO administrator dashboard.");
+
+            throw new Error(
+                "This account is not authorized for the ALERTO administrator dashboard."
+            );
         }
 
-        // onAuthStateChanged will display the dashboard.
     } catch (error) {
         console.error("Admin login failed:", error);
 
@@ -378,48 +609,72 @@ loginForm.addEventListener("submit", async function(event) {
             error.code === "auth/invalid-credential"
                 ? "Incorrect email or password."
                 : error.message;
+
     } finally {
         loginButton.disabled = false;
         loginButton.textContent = "Sign In";
     }
 });
 
-
 // ADMIN LOGOUT
 document.getElementById("logoutButton")
     .addEventListener("click", async function() {
+
         if (unsubscribeReports) {
             unsubscribeReports();
             unsubscribeReports = null;
+        }
+
+        if (unsubscribeUsers) {
+            unsubscribeUsers();
+            unsubscribeUsers = null;
         }
 
         await signOut(auth);
     });
 
+// CHECK ADMIN LOGIN SESSION
+onAuthStateChanged(
+    auth,
 
-// CHECK LOGIN SESSION
-onAuthStateChanged(auth, user => {
-    if (user && user.uid === ADMIN_UID) {
-        loginScreen.classList.add("hidden");
-        dashboard.classList.remove("hidden");
+    user => {
+        console.log("AUTHENTICATION CHECK");
+        console.log("Logged-in UID:", user?.uid);
+        console.log("Is Admin:", user?.uid === ADMIN_UID);
 
-        document.getElementById("adminEmailDisplay").textContent =
-            user.email || "Administrator";
+        if (user && user.uid === ADMIN_UID) {
+            loginScreen.classList.add("hidden");
+            dashboard.classList.remove("hidden");
 
-        loadReports();
-    } else {
-        loginScreen.classList.remove("hidden");
-        dashboard.classList.add("hidden");
+            document.getElementById("adminEmailDisplay").textContent =
+                user.email || "Administrator";
 
-        if (unsubscribeReports) {
-            unsubscribeReports();
-            unsubscribeReports = null;
+            loadReports();
+            loadVerificationRequests();
+
+        } else {
+            loginScreen.classList.remove("hidden");
+            dashboard.classList.add("hidden");
+
+            if (unsubscribeReports) {
+                unsubscribeReports();
+                unsubscribeReports = null;
+            }
+
+            if (unsubscribeUsers) {
+                unsubscribeUsers();
+                unsubscribeUsers = null;
+            }
+
+            if (map) {
+                map.remove();
+                map = null;
+                markers = {};
+            }
         }
+    },
 
-        if (map) {
-            map.remove();
-            map = null;
-            markers = {};
-        }
+    error => {
+        console.error("Authentication state error:", error);
     }
-});
+);
